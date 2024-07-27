@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static javax.swing.WindowConstants.DISPOSE_ON_CLOSE;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -20,10 +21,12 @@ public class GuiBancos extends javax.swing.JFrame {
 
     private Conexao conexao;
     private ArrayStrings stringlist;
+    private List<String> colunasNameList = new ArrayList<>();
+    private List<String> entradaInsercao = new ArrayList<>();
     
     public GuiBancos() {
         initComponents();
-        conexao = new Conexao();
+        conexao = Conexao.getInstance();
         stringlist = new ArrayStrings();
         jMostrarBancos.removeAllItems();
         jMostrarTables.removeAllItems();
@@ -36,14 +39,13 @@ public class GuiBancos extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTabelaDeTables = new javax.swing.JTable();
         botaoConectarBanco = new javax.swing.JButton();
-        botaoAtualizaTabelas = new javax.swing.JButton();
         botaoInserirItem = new javax.swing.JButton();
         botaoModificarItem = new javax.swing.JButton();
         jMostrarBancos = new javax.swing.JComboBox<>();
         jMostrarTables = new javax.swing.JComboBox<>();
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
-        jBotaoAtualizarTabela = new javax.swing.JButton();
+        jButton1 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -67,14 +69,12 @@ public class GuiBancos extends javax.swing.JFrame {
             }
         });
 
-        botaoAtualizaTabelas.setText("Mostrar Tabela");
-        botaoAtualizaTabelas.addActionListener(new java.awt.event.ActionListener() {
+        botaoInserirItem.setText("Inserir Item");
+        botaoInserirItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                botaoAtualizaTabelasActionPerformed(evt);
+                botaoInserirItemActionPerformed(evt);
             }
         });
-
-        botaoInserirItem.setText("Inserir Item");
 
         botaoModificarItem.setText("Modificar Item");
 
@@ -86,6 +86,11 @@ public class GuiBancos extends javax.swing.JFrame {
         });
 
         jMostrarTables.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jMostrarTables.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jMostrarTablesMouseClicked(evt);
+            }
+        });
         jMostrarTables.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMostrarTablesActionPerformed(evt);
@@ -96,10 +101,10 @@ public class GuiBancos extends javax.swing.JFrame {
 
         jLabel2.setText("Tables");
 
-        jBotaoAtualizarTabela.setText("Atualizar Tabela");
-        jBotaoAtualizarTabela.addActionListener(new java.awt.event.ActionListener() {
+        jButton1.setText("Remover Item");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jBotaoAtualizarTabelaActionPerformed(evt);
+                jButton1ActionPerformed(evt);
             }
         });
 
@@ -111,22 +116,22 @@ public class GuiBancos extends javax.swing.JFrame {
                 .addGap(46, 46, 46)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(botaoConectarBanco)
-                    .addComponent(botaoModificarItem)
-                    .addComponent(botaoInserirItem)
-                    .addComponent(botaoAtualizaTabelas)
-                    .addComponent(jBotaoAtualizarTabela))
-                .addGap(34, 34, 34)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addComponent(botaoModificarItem, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jButton1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 99, Short.MAX_VALUE)
+                        .addComponent(botaoInserirItem, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addGap(35, 35, 35)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jMostrarBancos, javax.swing.GroupLayout.PREFERRED_SIZE, 115, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(40, 40, 40)
+                        .addComponent(jMostrarBancos, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(35, 35, 35)
                         .addComponent(jLabel2)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jMostrarTables, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 485, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(79, Short.MAX_VALUE))
+                        .addComponent(jMostrarTables, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 548, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(15, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -134,22 +139,21 @@ public class GuiBancos extends javax.swing.JFrame {
                 .addGap(38, 38, 38)
                 .addComponent(botaoConectarBanco)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(botaoAtualizaTabelas)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jBotaoAtualizarTabela)
-                .addGap(12, 12, 12)
-                .addComponent(botaoModificarItem)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(botaoInserirItem)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButton1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(botaoModificarItem)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap(19, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jMostrarBancos, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jMostrarBancos, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel1))
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jMostrarTables, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jLabel2))
-                    .addComponent(jLabel1))
+                        .addComponent(jLabel2)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 238, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(24, 24, 24))
@@ -160,8 +164,10 @@ public class GuiBancos extends javax.swing.JFrame {
 
     private void botaoConectarBancoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botaoConectarBancoActionPerformed
         try {
-            conexao.conectarMostrar();
+            conexao.conectarBdGenerico();
             puxaBancoDeDados();
+            jMostrarBancos.addActionListener(new java.awt.event.ActionListener() {public void actionPerformed(java.awt.event.ActionEvent evt) {atualizarJcomboBoxTables();}});
+            jMostrarTables.addActionListener(new java.awt.event.ActionListener() {public void actionPerformed(java.awt.event.ActionEvent evt) {atualizarTabela();}});
         } catch (SQLException ex) {
             Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ClassNotFoundException ex) {
@@ -186,9 +192,10 @@ public class GuiBancos extends javax.swing.JFrame {
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    private void botaoAtualizaTabelasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botaoAtualizaTabelasActionPerformed
+    }    
+    public void atualizarJcomboBoxTables(){
         try {
+            jMostrarBancos.addActionListener(jMostrarTables);
             jMostrarTables.removeAllItems();
             String dbName = jMostrarBancos.getSelectedItem().toString();
             System.out.println(dbName);
@@ -203,20 +210,24 @@ public class GuiBancos extends javax.swing.JFrame {
         }   catch (ClassNotFoundException ex) {
             Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_botaoAtualizaTabelasActionPerformed
+    }
     
     public void retornaDataTable(String dbName, String tbName) throws ClassNotFoundException, SQLException{
         conexao.getInfoTabela(dbName, tbName);
         
     }
     private void jMostrarTablesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMostrarTablesActionPerformed
-
+        
     }//GEN-LAST:event_jMostrarTablesActionPerformed
-
-    private void jBotaoAtualizarTabelaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jBotaoAtualizarTabelaActionPerformed
+    
+        
+    public void atualizarTabela(){
         try {
             String tableName = jMostrarTables.getSelectedItem().toString();
             String dbName = jMostrarBancos.getSelectedItem().toString();
+            conexao.setTableName(tableName);
+            conexao.setDbName(dbName);
+            
             
             conexao.conectarBancoEspecifico(dbName);
             DefaultTableModel model = conexao.getTableModel(dbName, tableName);
@@ -227,8 +238,46 @@ public class GuiBancos extends javax.swing.JFrame {
         } catch (SQLException | ClassNotFoundException ex) {
             Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }//GEN-LAST:event_jBotaoAtualizarTabelaActionPerformed
+    }
+    private void botaoInserirItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_botaoInserirItemActionPerformed
+        abrirJanelaModificao();
+        
+        int quantidadeDeColunas = jTabelaDeTables.getColumnCount();
+        
+        colunasNameList.clear();
+        entradaInsercao.clear();
+        
+        for(int i = 0; i < quantidadeDeColunas; i++){
+            colunasNameList.add(jTabelaDeTables.getColumnName(i)+" ");
+        }
+        
+        atualizarTabela();
+    }//GEN-LAST:event_botaoInserirItemActionPerformed
 
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        int id = (int)jTabelaDeTables.getModel().getValueAt(jTabelaDeTables.getSelectedRow(), 0);
+        
+        try {
+            conexao.removerItemLista(id, conexao.getDbName(), conexao.getTableName());
+            atualizarTabela();
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(GuiBancos.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jMostrarTablesMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jMostrarTablesMouseClicked
+        atualizarTabela();
+    }//GEN-LAST:event_jMostrarTablesMouseClicked
+
+    private void abrirJanelaModificao(){
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new JanelaModificao("Janela de Inserção").setVisible(true);
+            }
+        });
+    }
     /**
      * @param args the command line arguments
      */
@@ -265,11 +314,10 @@ public class GuiBancos extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton botaoAtualizaTabelas;
     private javax.swing.JButton botaoConectarBanco;
     private javax.swing.JButton botaoInserirItem;
     private javax.swing.JButton botaoModificarItem;
-    private javax.swing.JButton jBotaoAtualizarTabela;
+    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JComboBox<String> jMostrarBancos;

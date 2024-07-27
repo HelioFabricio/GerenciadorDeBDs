@@ -12,65 +12,39 @@ import javax.swing.table.DefaultTableModel;
 
 public class Conexao {
     protected ArrayStrings listaStringsConexao = new ArrayStrings();
-    protected ArrayStrings listaDatasArrayStrings = new ArrayStrings();
-    public static Connection con = null;
+    private static Connection con = null;
+    private static Conexao instancia;
+    private String dbName = "";
+    private String tableName = "";
 
-    public void conectarMostrar() throws SQLException, ClassNotFoundException {
-        try {
-            checarConectadoConectar("nunca_mexa_db");
-
-            PreparedStatement stmt = con.prepareStatement("select * from tb_nunca_mexa");
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                String name = rs.getString("name");
-                Integer number = rs.getInt("number");
-                System.out.println("Nome: " + name + ", Numero Sorteado: " + number);
-            }
-        } catch (SQLException e) {
-            System.out.println("Erro" + e);
+    public static Conexao getInstance() {
+        if (instancia == null) {
+            instancia = new Conexao();
         }
+        return instancia;
     }
-
-    public void cadastrarUsuario(String nome, int numero, int numeroProximo, int difference) throws SQLException, ClassNotFoundException {
-        checarConectadoConectar("nunca_mexa_db");
-
-        String sqlCommand = "insert into tb_nunca_mexa(`name`, `number`, `num_prox`, difference) values(?, ?, ?, ?)";
-        PreparedStatement stmt = con.prepareStatement(sqlCommand);
-
-        stmt.setString(1, nome);
-        stmt.setInt(2, numero);
-        stmt.setInt(3, numeroProximo);
-        stmt.setInt(4, difference);
-
-        stmt.executeUpdate();
-
-        System.out.println("Cadastrado com Sucesso!");
-    }
-
-    public void atualizarPalpites(int id, int numProx, int difference) throws SQLException {
-        // TODO FAZER ATUALIZAR PALPITE PELO ID
-        String sqlCommand = "insert into tb_nunca_mexa(`name`, `number`, `num_prox`, difference) values(?, ?, ?, ?)";
-        PreparedStatement stmt = con.prepareStatement(sqlCommand);
-    }
-
-    public void checarConectadoConectar(String dbName) throws ClassNotFoundException, SQLException {
+    
+    public void conectarBdGenerico() throws ClassNotFoundException, SQLException {
+        String bancoDeDadosGenerico = "information_schema";
         if (con == null) {
             Class.forName("com.mysql.jdbc.Driver");
-            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1/"+dbName, "root", "");
-            System.out.println("Conectado");
+            con = DriverManager.getConnection("jdbc:mysql://127.0.0.1/"+bancoDeDadosGenerico, "root", "");
+            con.setAutoCommit(true);
+            System.out.println("Conectado ao "+ bancoDeDadosGenerico);
+            this.dbName = bancoDeDadosGenerico;
         }
     }
     
-    public void conectarBancoEspecifico(String dbName) throws ClassNotFoundException, SQLException {
+    public void conectarBancoEspecifico(String dbInserido) throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.jdbc.Driver");
-        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1/"+dbName, "root", "");
-        System.out.println("Conectado ao"+ dbName);
-        
+        con = DriverManager.getConnection("jdbc:mysql://127.0.0.1/"+dbInserido, "root", "");
+        con.setAutoCommit(true);
+        System.out.println("Conectado ao "+ dbInserido);
+        this.dbName = dbInserido;
     }
 
     public void atualizarListaDataBases() throws SQLException, ClassNotFoundException {
-        checarConectadoConectar("nunca_mexa_db");
+        conectarBdGenerico();
         
         String sqlCommand = "SHOW DATABASES";
         PreparedStatement stmt = con.prepareStatement(sqlCommand);
@@ -94,12 +68,14 @@ public class Conexao {
         while (rs.next()) {
             String tableName = rs.getString(1); // Nome da tabela
             listaStringsConexao.addStrings(tableName);
+            this.tableName = tableName;
         }
+        
     }
+    
     public DefaultTableModel getInfoTabela(String dbName,String tableName) throws ClassNotFoundException, SQLException{
         conectarBancoEspecifico(dbName);
         
-                
         String sqlCommand = "SELECT * FROM "+tableName;
         PreparedStatement stmt = con.prepareStatement(sqlCommand);
         ResultSet rs = stmt.executeQuery();
@@ -125,9 +101,9 @@ public class Conexao {
     }
 
     DefaultTableModel getTableModel(String dbName, String tableName) throws ClassNotFoundException, SQLException {
-        checarConectadoConectar(dbName);
+        conectarBdGenerico();
 
-        String sqlCommand = "SELECT * FROM " + tableName;
+        String sqlCommand = "SELECT * FROM `" + tableName +"`";
         PreparedStatement stmt = con.prepareStatement(sqlCommand);
         ResultSet rs = stmt.executeQuery();
 
@@ -153,8 +129,94 @@ public class Conexao {
         model.setRowCount(0); // Limpar dados existentes da tabela
 
         DefaultTableModel newModel = getTableModel(dbName, tableName);
-    for (int i = 0; i < newModel.getRowCount(); i++) {
-        model.addRow(newModel.getDataVector().elementAt(i));
+        
+        for (int i = 0; i < newModel.getRowCount(); i++) {
+            model.addRow(newModel.getDataVector().elementAt(i));
+            }
     }
-}
+    public void removerItemLista(int id, String dbName, String tableName) throws ClassNotFoundException, SQLException{
+        conectarBancoEspecifico(dbName);
+
+        String sqlCommand = "DELETE FROM " +tableName+ " WHERE id = ?";
+        PreparedStatement stmt = con.prepareStatement(sqlCommand);
+        stmt.setInt(1, id);
+        
+        int removedRow = stmt.executeUpdate();
+        if(removedRow > 0){
+            System.out.println("Item com ID" + id + " foi removido!");
+        }else{
+            System.out.println("Nao foi encontrado item com id " + id + ".");
+        }
+        
+        stmt.close();
+    }
+    
+    public void adicionarItemLista(String nomeColunas, String infoString, String tableName, boolean temId) throws ClassNotFoundException, SQLException {
+        // Conectar ao banco de dados específico
+        conectarBancoEspecifico(dbName);
+        System.out.println(infoString);
+
+        // Separar os dados com base nos espaços
+        String[] columnsData = infoString.split(" ");
+        String[] nameData = nomeColunas.split(" ");
+        
+        System.out.println("DE FATO " + infoString+ "\n" + nomeColunas);
+        // Obter o número de colunas e nomes de colunas
+        int columnCount = columnsData.length;
+        int nameCount = nameData.length;
+
+        // Construir a consulta SQL de inserção
+        StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
+
+        // Se temId é verdadeiro, excluímos o ID da lista de colunas e dos dados
+        int startIndex = temId ? 1 : 0;
+        int dataCount = columnCount - (temId ? 1 : 0);
+
+        // Adicionar os nomes das colunas à consulta SQL
+        for (int i = startIndex; i < nameCount; i++) {
+            sql.append(nameData[i]);
+            if (i < nameCount - 1) {
+                sql.append(", ");
+            }
+        }
+        sql.append(") VALUES (");
+
+        // Adicionar os placeholders para os valores
+        for (int i = 0; i < dataCount; i++) {
+            sql.append("?");
+            if (i < dataCount - 1) {
+                sql.append(", ");
+            }
+        }
+        sql.append(")");
+
+        try (PreparedStatement pstmt = con.prepareStatement(sql.toString())) {
+            // Configurar os valores dos placeholders
+            for (int i = 0; i < dataCount; i++) {
+                pstmt.setString(i + 1, columnsData[startIndex + i]);
+            }
+
+            // Executar a consulta
+            pstmt.executeUpdate();
+            System.out.println("Dados inseridos com sucesso.");
+        } catch (SQLException e) {
+            System.out.println("Erro ao inserir dados: " + e.getMessage());
+        }
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
+    public void setDbName(String dbName) {
+        this.dbName = dbName;
+    }
 }
